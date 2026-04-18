@@ -60,6 +60,7 @@ cat > /data/.openclaw/openclaw.json << EOF
     "port": ${PORT},
     "bind": "lan",
     "auth": {
+      "mode": "token",
       "token": "${OPENCLAW_GATEWAY_TOKEN}",
       "password": "${OPENCLAW_GATEWAY_PASSWORD}"
     },
@@ -117,6 +118,7 @@ cat > /data/.openclaw/openclaw.json << EOF
     "port": ${PORT},
     "bind": "lan",
     "auth": {
+      "mode": "token",
       "token": "${OPENCLAW_GATEWAY_TOKEN}",
       "password": "${OPENCLAW_GATEWAY_PASSWORD}"
     },
@@ -166,6 +168,16 @@ cat > /data/.openclaw/openclaw.json << EOF
 }
 EOF
 fi
+fi
+
+# Ensure gateway.auth.mode is set on any pre-existing config (persistent /data volume)
+if [ -f /data/.openclaw/openclaw.json ] && command -v jq >/dev/null 2>&1; then
+  if [ "$(jq -r '.gateway.auth.mode // empty' /data/.openclaw/openclaw.json)" = "" ]; then
+    echo "Patching missing gateway.auth.mode -> token in existing openclaw.json"
+    tmp=$(mktemp)
+    jq '.gateway.auth.mode = "token"' /data/.openclaw/openclaw.json > "$tmp" && mv "$tmp" /data/.openclaw/openclaw.json
+    chmod 600 /data/.openclaw/openclaw.json
+  fi
 fi
 
 echo "Running OpenClaw doctor to fix config..."
